@@ -172,7 +172,7 @@ class State:
     def play(self, rounds=100):
         for i in range(rounds):
             #if i%1000 == 0:
-            if i%(rounds/50):
+            if i%(rounds/50) == 0:
                 print("Rounds {}".format(i))
             
             # tbh a lot of this logic is kind of confusing and i think this could be improved
@@ -221,6 +221,7 @@ class State:
             # Player 1
             moves = self.availableMoves()
             p1_action = self.p1.chooseAction(moves, self.board, self.playerSymbol)
+            print("{} takes action {}".format(self.p1.name, p1_action))
             # take action and update board state
             self.updateState(p1_action)
             self.showBoard()
