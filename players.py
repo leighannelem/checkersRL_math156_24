@@ -103,7 +103,6 @@ class HumanPlayer:
                 # i.e. if it is legal
                 # lowkey this might be wrong idk
                 # make sure that it checks if the move is legal
-                print("{} takes action {}".format(self.name, action))
                 return action
 
     # append hash state

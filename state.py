@@ -100,6 +100,19 @@ class State:
         # combine this and getLegalMoves into one func if possible idk
         moves = self.getLegalMoves(self.playerSymbol)
         return moves
+    
+    def availableJumps(self, row, col):
+        # available jumps for current player
+        # purpose: double/triple jumps
+        jumps = [(row, col, row, col)]
+        for i in (-2, 2):
+            for j in range(-1, 2, 2):
+                end_row = row + i
+                end_col = col + i*j
+                if self.is_valid_move(row, col, end_row, end_col):
+                    jumps.append((row, col, end_row, end_col))
+        return jumps
+
 
     def updateState(self, move):
         # Update board state based on the action taken by the player
@@ -157,7 +170,7 @@ class State:
     def play(self, rounds=100):
         for i in range(rounds):
             #if i%1000 == 0:
-            if i%(rounds/50) == 0:
+            if i%(rounds//50) == 0:
                 print("Rounds {}".format(i))
             
             # tbh a lot of this logic is kind of confusing and i think this could be improved
@@ -168,6 +181,11 @@ class State:
                 p1_action = self.p1.chooseAction(moves, self.board, self.playerSymbol) 
                 # take action and update board state
                 self.updateState(p1_action)
+
+                
+                # TODO: add double and triple jumps from play_human
+                
+
                 board_hash = self.getHash()
                 self.p1.addState(board_hash)
                 # check board status if it is end
@@ -187,6 +205,9 @@ class State:
                     p2_action = self.p2.chooseAction(moves, self.board, self.playerSymbol) 
                     # take action and update board state
                     self.updateState(p2_action)
+
+                    # TODO: add double and triple jumps from play_human
+
                     board_hash = self.getHash()
                     self.p2.addState(board_hash)
 
@@ -209,6 +230,30 @@ class State:
             print("{} takes action {}".format(self.p1.name, p1_action))
             # take action and update board state
             self.updateState(p1_action)
+
+            # Double Jump
+            # check if the action was a jump 
+            if abs(p1_action[0] - p1_action[2]) == 2:
+                # if it was a jump, then get all available addl jumps at this new board state
+                jumps = self.availableJumps(p1_action[0], p1_action[1])
+                if len(jumps) > 1:
+                    # choose an action out of the jumps
+                    p1_action = self.p1.chooseAction(jumps, self.board, self.playerSymbol)
+                    print("{} takes action {}".format(self.p1.name, p1_action))
+                    self.updateState(p1_action)
+
+                    # Triple Jump
+                    # check if the action was a jump 
+                    if abs(p1_action[0] - p1_action[2]) == 2:
+                        # if it was a jump, then get all available addl jumps at this new board state
+                        jumps = self.availableJumps(p1_action[0], p1_action[1])
+                        if len(jumps) > 1:
+                            # choose an action out of the jumps
+                            p1_action = self.p1.chooseAction(jumps, self.board, self.playerSymbol)
+                            print("{} takes action {}".format(self.p1.name, p1_action))
+                            self.updateState(p1_action)
+
+
             self.showBoard()
             # check board status if it is end
             win = self.winner()
@@ -220,8 +265,34 @@ class State:
                 # player 2
                 moves = self.availableMoves()
                 p2_action = self.p2.chooseAction(moves)
+                print("{} takes action {}".format(self.p2.name, p2_action))
                 self.updateState(p2_action)
                 self.showBoard()
+
+                # Double Jump
+                # check if the action was a jump 
+                if abs(p2_action[0] - p2_action[2]) == 2:
+                    # if it was a jump, then get all available addl jumps at this new board state
+                    jumps = self.availableJumps(p2_action[0], p2_action[1])
+                    if len(jumps) > 1:
+                        # choose an action out of the jumps
+                        p2_action = self.p2.chooseAction(jumps)
+                        print("{} takes action {}".format(self.p2.name, p2_action))
+                        self.updateState(p2_action)
+                        self.showBoard()
+
+                        # Triple Jump
+                        # check if the action was a jump 
+                        if abs(p2_action[0] - p2_action[2]) == 2:
+                            # if it was a jump, then get all available addl jumps at this new board state
+                            jumps = self.availableJumps(p2_action[0], p2_action[1])
+                            if len(jumps) > 1:
+                                # choose an action out of the jumps
+                                p2_action = self.p2.chooseAction(jumps)
+                                print("{} takes action {}".format(self.p2.name, p2_action))
+                                self.updateState(p2_action)
+                                self.showBoard()
+
                 win = self.winner()
                 if win is not None:
                     print(self.p2.name, "wins!")
