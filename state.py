@@ -44,19 +44,6 @@ class State:
                 # black has no legal moves left
                 self.isEnd = True
                 return 1 
-        '''
-        # also need to check if they have no legal moves left:
-        if len(self.getLegalMoves(1)) == 0:
-            # this means red has no moves left
-            self.isEnd = True
-            return "red has no moves left"
-            return -1
-        if len(self.getLegalMoves(-1)) == 0:
-            # this means black has no moves left
-            self.isEnd = True
-            return "black has no moves left"
-            return 1
-        '''
         
     # from game_env.py
     # need this for getLegalMoves
@@ -128,14 +115,12 @@ class State:
             # turns into king
             self.board[end_row][end_col] = -2 
         else:
-            # this is where the problem is
             self.board[end_row][end_col] = self.board[start_row][start_col]
         if abs(end_row - start_row) == 2:
             # remove the piece that was jumped
             self.board[(start_row + end_row) // 2][(start_col + end_col) // 2] = 0
             # no double jumps (for now) <3
         self.board[start_row][start_col] = 0
-        
         # switch player
         self.playerSymbol = -1 if self.playerSymbol == 1 else 1
     

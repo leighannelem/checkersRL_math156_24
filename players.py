@@ -116,4 +116,25 @@ class HumanPlayer:
     
     def reset(self):
         pass
+
+class RandomPlayer:
+    def __init__(self,name):
+        self.name = name
+
+    def chooseAction(self, moves):
+        # take random action
+        idx = np.random.choice(len(moves))
+        action = moves[idx]
+        return action
+
+    # append hash state
+    def addState(self, state):
+        pass
+
+    # at the end of the game, backpropogate and update states value
+    def feedReward(self, reward):
+        pass
+    
+    def reset(self):
+        pass
             
