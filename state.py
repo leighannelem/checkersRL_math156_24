@@ -134,9 +134,9 @@ class State:
             self.board[(start_row + end_row) // 2][(start_col + end_col) // 2] = 0
             # no double jumps (for now) <3
         self.board[start_row][start_col] = 0
+        self.giveIntermediateReward
         # switch player
         self.playerSymbol = -1 if self.playerSymbol == 1 else 1
-        self.giveIntermediateReward
     
     # only when game ends
     def giveReward(self):
@@ -198,10 +198,27 @@ class State:
                 # take action and update board state
                 self.updateState(p1_action)
 
-                
-                # TODO: add double and triple jumps from play_human
-                
-
+                # Double Jump
+                if abs(p1_action[0] - p1_action[2]) == 2:
+                    self.playerSymbol = 1
+                    jumps = self.availableJumps(p1_action[2], p1_action[3])
+                    if len(jumps) > 1:
+                        p1_action = self.p1.chooseAction(jumps, self.board, self.playerSymbol)
+                        self.updateState(p1_action)
+                        board_hash = self.getHash()
+                        self.p1.addState(board_hash)
+                        # Triple Jump
+                        if abs(p1_action[0] - p1_action[2]) == 2:
+                            self.playerSymbol = 1
+                            jumps = self.availableJumps(p1_action[2], p1_action[3])
+                            if len(jumps) > 1:
+                                p1_action = self.p1.chooseAction(jumps, self.board, self.playerSymbol)
+                                self.updateState(p1_action)
+                                board_hash = self.getHash()
+                                self.p1.addState(board_hash)
+                            self.playerSymbol = -1
+                    self.playerSymbol = -1
+                                
                 board_hash = self.getHash()
                 self.p1.addState(board_hash)
                 # check board status if it is end
@@ -222,7 +239,26 @@ class State:
                     # take action and update board state
                     self.updateState(p2_action)
 
-                    # TODO: add double and triple jumps from play_human
+                    # Double Jump
+                    if abs(p2_action[0] - p2_action[2]) == 2:
+                        self.playerSymbol = 1
+                        jumps = self.availableJumps(p2_action[2], p2_action[3])
+                        if len(jumps) > 1:
+                            p2_action = self.p2.chooseAction(jumps, self.board, self.playerSymbol)
+                            self.updateState(p2_action)
+                            board_hash = self.getHash()
+                            self.p2.addState(board_hash)
+                            # Triple Jump
+                            if abs(p2_action[0] - p2_action[2]) == 2:
+                                self.playerSymbol = 1
+                                jumps = self.availableJumps(p2_action[2], p2_action[3])
+                                if len(jumps) > 1:
+                                    p2_action = self.p2.chooseAction(jumps, self.board, self.playerSymbol)
+                                    self.updateState(p2_action)
+                                    board_hash = self.getHash()
+                                    self.p2.addState(board_hash)
+                                self.playerSymbol = -1
+                        self.playerSymbol = -1
 
                     board_hash = self.getHash()
                     self.p2.addState(board_hash)
@@ -250,9 +286,13 @@ class State:
             # Double Jump
             # check if the action was a jump 
             if abs(p1_action[0] - p1_action[2]) == 2:
+                # switch player back
+                self.playerSymbol = 1
+                
                 # if it was a jump, then get all available addl jumps at this new board state
-                jumps = self.availableJumps(p1_action[0], p1_action[1])
+                jumps = self.availableJumps(p1_action[2], p1_action[3])
                 if len(jumps) > 1:
+                    print("Double jump!")
                     # choose an action out of the jumps
                     p1_action = self.p1.chooseAction(jumps, self.board, self.playerSymbol)
                     print("{} takes action {}".format(self.p1.name, p1_action))
@@ -261,13 +301,18 @@ class State:
                     # Triple Jump
                     # check if the action was a jump 
                     if abs(p1_action[0] - p1_action[2]) == 2:
+                        # switch player back
+                        self.playerSymbol = 1
                         # if it was a jump, then get all available addl jumps at this new board state
-                        jumps = self.availableJumps(p1_action[0], p1_action[1])
+                        jumps = self.availableJumps(p1_action[2], p1_action[3])
                         if len(jumps) > 1:
+                            print("Triple jump!")
                             # choose an action out of the jumps
                             p1_action = self.p1.chooseAction(jumps, self.board, self.playerSymbol)
                             print("{} takes action {}".format(self.p1.name, p1_action))
                             self.updateState(p1_action)
+                        self.playerSymbol = -1
+                self.playerSymbol = -1
 
 
             self.showBoard()
@@ -288,9 +333,12 @@ class State:
                 # Double Jump
                 # check if the action was a jump 
                 if abs(p2_action[0] - p2_action[2]) == 2:
+                    # switch player back
+                    self.playerSymbol = -1
                     # if it was a jump, then get all available addl jumps at this new board state
-                    jumps = self.availableJumps(p2_action[0], p2_action[1])
+                    jumps = self.availableJumps(p2_action[2], p2_action[3])
                     if len(jumps) > 1:
+                        print("Double jump! Your available jumps are:", jumps)
                         # choose an action out of the jumps
                         p2_action = self.p2.chooseAction(jumps)
                         print("{} takes action {}".format(self.p2.name, p2_action))
@@ -300,14 +348,19 @@ class State:
                         # Triple Jump
                         # check if the action was a jump 
                         if abs(p2_action[0] - p2_action[2]) == 2:
+                            # switch player back
+                            self.playerSymbol = -1
                             # if it was a jump, then get all available addl jumps at this new board state
-                            jumps = self.availableJumps(p2_action[0], p2_action[1])
+                            jumps = self.availableJumps(p2_action[2], p2_action[3])
                             if len(jumps) > 1:
+                                print("Triple jump! Your available jumps are:", jumps)
                                 # choose an action out of the jumps
                                 p2_action = self.p2.chooseAction(jumps)
                                 print("{} takes action {}".format(self.p2.name, p2_action))
                                 self.updateState(p2_action)
                                 self.showBoard()
+                            self.playerSymbol = 1
+                    self.playerSymbol = 1
 
                 win = self.winner()
                 if win is not None:
