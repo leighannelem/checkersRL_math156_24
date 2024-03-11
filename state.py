@@ -136,6 +136,7 @@ class State:
         self.board[start_row][start_col] = 0
         # switch player
         self.playerSymbol = -1 if self.playerSymbol == 1 else 1
+        self.giveIntermediateReward
     
     # only when game ends
     def giveReward(self):
@@ -149,6 +150,21 @@ class State:
             self.p1.feedReward(0)
             self.p2.feedReward(1)
         # no option for a tie/stalemate in checkers
+    
+    def giveIntermediateReward(self):
+        # count the pieces for each player
+        red_pieces = np.count_nonzero(self.board == 1) + np.count_nonzero(self.board == 2)
+        black_pieces = np.count_nonzero(self.board == -1) + np.count_nonzero(self.board == -2)
+
+        # give a small reward for each move
+        self.p1.feedReward(0.01)
+        self.p2.feedReward(0.01)
+
+        # give a larger reward if the player has more pieces than the opponent
+        if red_pieces > black_pieces:
+            self.p1.feedReward(0.1)
+        elif black_pieces > red_pieces:
+            self.p2.feedReward(0.1)
 
     def reset(self):
         # Reset the game state
