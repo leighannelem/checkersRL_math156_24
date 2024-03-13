@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+from state import State
 
 class Player:
     def __init__(self, name, exp_rate=0.3):
@@ -137,3 +138,66 @@ class RandomPlayer:
     def reset(self):
         pass
             
+
+from keras.models import Sequential
+from keras.layers import Dense, Flatten
+from keras.optimizers import Adam
+
+class DQN_Player:
+    def __init__(self, name, state=None, exp_rate=0.3):
+        self.name = name
+        self.states = []  # record all positions taken
+        self.lr = 0.2
+        self.exp_rate = exp_rate
+        self.decay_gamma = 0.9
+        self.state = state 
+        self.availablePositions = []
+        if self.state is not None:
+            self.updateAvailablePositions()
+            
+        self.model = self._build_model()
+
+    def updateAvailablePositions(self):
+        if self.state is not None:
+            self.availablePositions = self.state.availableMoves()
+
+
+    def _build_model(self):
+        model = Sequential()
+        model.add(Flatten(input_shape=(1,) + (8,8)))
+        model.add(Dense(24, activation='relu'))
+        model.add(Dense(24, activation='relu'))
+        model.add(Dense(len(self.availablePositions()), activation='linear'))
+        model.compile(loss='mse', optimizer=Adam())
+        return model
+
+    def getHash(self, board):
+        boardHash = str(board.flatten())
+        return boardHash
+
+    def chooseAction(self, positions, current_board, symbol):
+        if np.random.uniform(0, 1) <= self.exp_rate:
+            # take random action
+            idx = np.random.choice(len(positions))
+            action = positions[idx]
+        else:
+            value_max = -np.inf
+            for p in positions:
+                next_board = current_board.copy()
+                next_board[p] = symbol
+                value = self.model.predict(next_board.reshape((1,) + next_board.shape))[0]
+                if value > value_max:
+                    value_max = value
+                    action = p
+        return action
+
+    def feedReward(self, reward):
+        for st in reversed(self.states):
+            if self.states_value.get(st) is None:
+                self.states_value[st] = 0
+            self.states_value[st] += self.lr*(self.decay_gamma*reward - self.states_value[st])
+            reward = self.states_value[st]
+
+    def reset(self):
+        self.states = []
+    
