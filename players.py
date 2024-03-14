@@ -5,13 +5,14 @@ class Player:
     def __init__(self, name, exp_rate=0.3):
         self.name = name # string
         self.states = []  # record all positions taken
-        self.lr = 0.2
+        self.lr = 0.02
         # exp_rate is epsilon
         # exp_rate = 0.3 means 70% of the time agent will take a greedy action and
         # 30% of the time will take a random action
         self.exp_rate = exp_rate
         self.decay_gamma = 0.9
         self.states_value = {}  # state -> value
+        self.actions = []
 
 
     def getHash(self, board):
@@ -59,6 +60,7 @@ class Player:
                     value_max = value
                     action = m
         # print("{} takes action {}".format(self.name, action))
+        self.actions.append(action)
         return action
 
     
@@ -66,14 +68,26 @@ class Player:
     def addState(self, state):
         self.states.append(state)
 
-    # at the end of game, backpropogate and update states value
+    # at the end of game, backpropogate and update states value and update the Q-Table
     def feedReward(self, reward):
-        for st in reversed(self.states):
-            if self.states_value.get(st) is None:
-                self.states_value[st] = 0
-            self.states_value[st] += self.lr*(self.decay_gamma*reward - self.states_value[st])
-            reward = self.states_value[st]
+        for i in reversed(range(len(self.states))):
+            state = self.states[i]
+            action = self.actions[i]  # assuming self.actions is a list of actions taken
+            state_action = (state, action)
+            if self.states_value.get(state_action) is None:
+                self.states_value[state_action] = 0
+            self.states_value[state_action] += self.lr*(self.decay_gamma*reward - self.states_value[state_action])
+            reward = self.states_value[state_action]
     
+    def calculate_q_value_difference(self, old_q_values):
+        total_difference = 0
+        for state_action, q_value in self.states_value.items():
+            if state_action in old_q_values:
+                total_difference += abs(old_q_values[state_action] - q_value)
+            else:
+                total_difference += abs(q_value)
+        return total_difference
+
     def reset(self):
         self.states = []
 

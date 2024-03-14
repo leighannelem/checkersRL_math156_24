@@ -188,7 +188,8 @@ class State:
             #if i%1000 == 0:
             if i%(rounds//50) == 0:
                 print("Rounds {}".format(i))
-            
+
+            old_q_values = self.p1.states_value.copy()
             # tbh a lot of this logic is kind of confusing and i think this could be improved
 
             while not self.isEnd: #i.e. while the game has not ended
@@ -271,7 +272,9 @@ class State:
                         self.p2.reset()
                         self.reset()
                         break
-        
+                    
+            difference = self.p1.calculate_q_value_difference(old_q_values)
+            print(f"Difference in Q-values from last game: {difference}")
 
     def play_human(self):
         # Play against a human
