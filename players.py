@@ -2,7 +2,7 @@ import numpy as np
 import pickle
 
 class Player:
-    def __init__(self, name, exp_rate=0.3, exp_rate_decay=0.99, decay_gamma=0.9, decay_gamma_growth=1.01):
+    def __init__(self, name, exp_rate=0.3, exp_rate_decay=0.99, decay_gamma=0.9, decay_gamma_decay=0.99):
         self.name = name # string
         self.states = []  # record all positions taken
         self.lr = 0.02
@@ -11,7 +11,7 @@ class Player:
         # 30% of the time will take a random action
         self.exp_rate = exp_rate
         self.decay_gamma = decay_gamma
-        self.decay_gamma_growth = decay_gamma_growth
+        self.decay_gamma_decay = decay_gamma_decay
         self.states_value = {}  # state -> value
         self.actions = []
         self.rewards = []
@@ -22,8 +22,8 @@ class Player:
     def decayExplorationRate(self):
         self.exp_rate = max(self.exp_rate * self.exp_rate_decay, 0.01)  # 0.01 is the minimum exploration rate
 
-    def growDiscountFactor(self):
-        self.decay_gamma = min(self.decay_gamma * self.decay_gamma_growth, 1)  # 1 is the maximum decay_gamma
+    def decayDiscountFactor(self):
+        self.decay_gamma = min(self.decay_gamma * self.decay_gamma_decay, 0)  #0 is the minimum discount factor
 
     def getHash(self, board):
         boardHash = str(board.flatten())
