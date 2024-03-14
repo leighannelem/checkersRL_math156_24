@@ -13,6 +13,7 @@ class Player:
         self.decay_gamma = 0.9
         self.states_value = {}  # state -> value
         self.actions = []
+        self.rewards = []
 
 
     def getHash(self, board):
@@ -49,7 +50,10 @@ class Player:
                     # remove the piece that was jumped
                     next_board[(start_row + end_row) // 2][(start_col + end_col) // 2] = 0
                     # no double jumps (for now) <3
-
+                    reward = 0.1
+                else:
+                    reward = 0
+                self.rewards.append(reward)
                 next_boardHash = self.getHash(next_board)
                 if self.states_value.get(next_boardHash) is None:
                     value = 0
@@ -59,6 +63,7 @@ class Player:
                 if value >= value_max:
                     value_max = value
                     action = m
+                
         # print("{} takes action {}".format(self.name, action))
         self.actions.append(action)
         return action
@@ -69,15 +74,21 @@ class Player:
         self.states.append(state)
 
     # at the end of game, backpropogate and update states value and update the Q-Table
-    def feedReward(self, reward):
-        for i in reversed(range(len(self.states))):
+    def feedReward(self):
+        for i in reversed(range(len(self.states) - 1)):  # stop at the second last state
             state = self.states[i]
-            action = self.actions[i]  # assuming self.actions is a list of actions taken
+            action = self.actions[i]
+            reward = self.rewards[i]  # assuming self.rewards exists
             state_action = (state, action)
             if self.states_value.get(state_action) is None:
                 self.states_value[state_action] = 0
-            self.states_value[state_action] += self.lr*(self.decay_gamma*reward - self.states_value[state_action])
-            reward = self.states_value[state_action]
+
+            next_state = self.states[i + 1]
+            next_state_actions = self.getPossibleActions(next_state)
+            next_state_values = [self.states_value.get((next_state, a), 0) for a in next_state_actions]
+            max_next_state_value = max(next_state_values, default=0)
+
+            self.states_value[state_action] += self.lr*(reward + self.decay_gamma*max_next_state_value - self.states_value[state_action])
     
     def calculate_q_value_difference(self, old_q_values):
         total_difference = 0
