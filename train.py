@@ -157,7 +157,7 @@ def GetModel(game, playtype, rounds=100):
         cumulative_rewards.append(rewards)
         #model.save("model.keras")
     indices = list(range(len(winrates)))
-    print("won", won/10, ", lost", lost/10, ", draw", draw/10)
+    print("won", won, ", lost", lost, ", draw", draw)
     plt.plot(indices, winrates, marker='o', linestyle='-', label = "win rate")
     plt.plot(indices, loserates, marker='o', linestyle='-', label = "lose rate")
     plt.plot(indices, drawrates, marker='o', linestyle='-', label = "draw rate")
