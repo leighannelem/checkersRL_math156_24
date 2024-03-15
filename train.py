@@ -38,7 +38,7 @@ def GetModel(game, rounds=100):
     model.compile(optimizer='nadam', loss='binary_crossentropy', metrics=["acc"])
 
     for i in tqdm(range(rounds)):
-        print("won", won, ", lost", lost, ", draw", draw)
+        #print("won", won, ", lost", lost, ", draw", draw)
         data = []
         isDraw = False
         for g in range(10):
@@ -146,7 +146,7 @@ def GetModel(game, rounds=100):
                 
                 player = -player
         data = tf.constant(data)
-        if (not isDraw): model.fit(data[1:], labels[2:], epochs=16, batch_size=256)
+        if (not isDraw): model.fit(data[1:], labels[2:], epochs=16, batch_size=256, verbose=0)
         labels = np.zeros(1)
 
         winrate = int((won)/(won+draw+lost)*100)
