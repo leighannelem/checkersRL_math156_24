@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+
 
 class State:
     def __init__(self, p1, p2):
@@ -134,7 +137,6 @@ class State:
             self.board[(start_row + end_row) // 2][(start_col + end_col) // 2] = 0
             # no double jumps (for now) <3
         self.board[start_row][start_col] = 0
-        self.giveIntermediateReward
         # switch player
         self.playerSymbol = -1 if self.playerSymbol == 1 else 1
     
@@ -150,21 +152,6 @@ class State:
             self.p1.feedReward(0)
             self.p2.feedReward(1)
         # no option for a tie/stalemate in checkers
-    
-    def giveIntermediateReward(self):
-        # count the pieces for each player
-        red_pieces = np.count_nonzero(self.board == 1) + np.count_nonzero(self.board == 2)
-        black_pieces = np.count_nonzero(self.board == -1) + np.count_nonzero(self.board == -2)
-
-        # give a small reward for each move
-        self.p1.feedReward(0.01)
-        self.p2.feedReward(0.01)
-
-        # give a larger reward if the player has more pieces than the opponent
-        if red_pieces > black_pieces:
-            self.p1.feedReward(0.1)
-        elif black_pieces > red_pieces:
-            self.p2.feedReward(0.1)
 
     def reset(self):
         # Reset the game state
@@ -184,12 +171,14 @@ class State:
         # positives: red
     
     def play(self, rounds=100):
-        for i in range(rounds):
+        won = 0
+        lost = 0
+        winrates = []
+        for i in tqdm(range(rounds)):
             #if i%1000 == 0:
-            if i%(rounds//50) == 0:
-                print("Rounds {}".format(i))
-
-            old_q_values = self.p1.states_value.copy()
+            #if i%(rounds//50) == 0:
+            #    print("Rounds {}".format(i))
+            
             # tbh a lot of this logic is kind of confusing and i think this could be improved
 
             while not self.isEnd: #i.e. while the game has not ended
@@ -199,27 +188,10 @@ class State:
                 # take action and update board state
                 self.updateState(p1_action)
 
-                # Double Jump
-                if abs(p1_action[0] - p1_action[2]) == 2:
-                    self.playerSymbol = 1
-                    jumps = self.availableJumps(p1_action[2], p1_action[3])
-                    if len(jumps) > 1:
-                        p1_action = self.p1.chooseAction(jumps, self.board, self.playerSymbol)
-                        self.updateState(p1_action)
-                        board_hash = self.getHash()
-                        self.p1.addState(board_hash)
-                        # Triple Jump
-                        if abs(p1_action[0] - p1_action[2]) == 2:
-                            self.playerSymbol = 1
-                            jumps = self.availableJumps(p1_action[2], p1_action[3])
-                            if len(jumps) > 1:
-                                p1_action = self.p1.chooseAction(jumps, self.board, self.playerSymbol)
-                                self.updateState(p1_action)
-                                board_hash = self.getHash()
-                                self.p1.addState(board_hash)
-                            self.playerSymbol = -1
-                    self.playerSymbol = -1
-                                
+                
+                # TODO: add double and triple jumps from play_human
+                
+
                 board_hash = self.getHash()
                 self.p1.addState(board_hash)
                 # check board status if it is end
@@ -228,6 +200,7 @@ class State:
                 win = self.winner()
                 if win is not None: #i.e. there is a winner
                     # self.showBoard()
+                    won += 1
                     self.giveReward() # reward or penalize depending on outcome
                     self.p1.reset()
                     self.p2.reset()
@@ -240,26 +213,7 @@ class State:
                     # take action and update board state
                     self.updateState(p2_action)
 
-                    # Double Jump
-                    if abs(p2_action[0] - p2_action[2]) == 2:
-                        self.playerSymbol = 1
-                        jumps = self.availableJumps(p2_action[2], p2_action[3])
-                        if len(jumps) > 1:
-                            p2_action = self.p2.chooseAction(jumps, self.board, self.playerSymbol)
-                            self.updateState(p2_action)
-                            board_hash = self.getHash()
-                            self.p2.addState(board_hash)
-                            # Triple Jump
-                            if abs(p2_action[0] - p2_action[2]) == 2:
-                                self.playerSymbol = 1
-                                jumps = self.availableJumps(p2_action[2], p2_action[3])
-                                if len(jumps) > 1:
-                                    p2_action = self.p2.chooseAction(jumps, self.board, self.playerSymbol)
-                                    self.updateState(p2_action)
-                                    board_hash = self.getHash()
-                                    self.p2.addState(board_hash)
-                                self.playerSymbol = -1
-                        self.playerSymbol = -1
+                    # TODO: add double and triple jumps from play_human
 
                     board_hash = self.getHash()
                     self.p2.addState(board_hash)
@@ -267,14 +221,22 @@ class State:
                     win = self.winner()
                     if win is not None:
                         #self.showBoard()
+                        lost += 1
                         self.giveReward()
                         self.p1.reset()
                         self.p2.reset()
                         self.reset()
                         break
-                    
-            difference = self.p1.calculate_q_value_difference(old_q_values)
-            print(f"Difference in Q-values from last game: {difference}")
+            winrate = int((won)/(won+lost)*100)
+            winrates.append(winrate)
+        indices = list(range(len(winrates)))
+        plt.plot(indices, winrates, marker='o', linestyle='-')
+
+        plt.title('Rates of win')
+        plt.xlabel('generations')
+        plt.ylabel('wins [%]')
+        
+        
 
     def play_human(self):
         # Play against a human
@@ -289,13 +251,9 @@ class State:
             # Double Jump
             # check if the action was a jump 
             if abs(p1_action[0] - p1_action[2]) == 2:
-                # switch player back
-                self.playerSymbol = 1
-                
                 # if it was a jump, then get all available addl jumps at this new board state
-                jumps = self.availableJumps(p1_action[2], p1_action[3])
+                jumps = self.availableJumps(p1_action[0], p1_action[1])
                 if len(jumps) > 1:
-                    print("Double jump!")
                     # choose an action out of the jumps
                     p1_action = self.p1.chooseAction(jumps, self.board, self.playerSymbol)
                     print("{} takes action {}".format(self.p1.name, p1_action))
@@ -304,18 +262,13 @@ class State:
                     # Triple Jump
                     # check if the action was a jump 
                     if abs(p1_action[0] - p1_action[2]) == 2:
-                        # switch player back
-                        self.playerSymbol = 1
                         # if it was a jump, then get all available addl jumps at this new board state
-                        jumps = self.availableJumps(p1_action[2], p1_action[3])
+                        jumps = self.availableJumps(p1_action[0], p1_action[1])
                         if len(jumps) > 1:
-                            print("Triple jump!")
                             # choose an action out of the jumps
                             p1_action = self.p1.chooseAction(jumps, self.board, self.playerSymbol)
                             print("{} takes action {}".format(self.p1.name, p1_action))
                             self.updateState(p1_action)
-                        self.playerSymbol = -1
-                self.playerSymbol = -1
 
 
             self.showBoard()
@@ -336,12 +289,9 @@ class State:
                 # Double Jump
                 # check if the action was a jump 
                 if abs(p2_action[0] - p2_action[2]) == 2:
-                    # switch player back
-                    self.playerSymbol = -1
                     # if it was a jump, then get all available addl jumps at this new board state
-                    jumps = self.availableJumps(p2_action[2], p2_action[3])
+                    jumps = self.availableJumps(p2_action[0], p2_action[1])
                     if len(jumps) > 1:
-                        print("Double jump! Your available jumps are:", jumps)
                         # choose an action out of the jumps
                         p2_action = self.p2.chooseAction(jumps)
                         print("{} takes action {}".format(self.p2.name, p2_action))
@@ -351,19 +301,14 @@ class State:
                         # Triple Jump
                         # check if the action was a jump 
                         if abs(p2_action[0] - p2_action[2]) == 2:
-                            # switch player back
-                            self.playerSymbol = -1
                             # if it was a jump, then get all available addl jumps at this new board state
-                            jumps = self.availableJumps(p2_action[2], p2_action[3])
+                            jumps = self.availableJumps(p2_action[0], p2_action[1])
                             if len(jumps) > 1:
-                                print("Triple jump! Your available jumps are:", jumps)
                                 # choose an action out of the jumps
                                 p2_action = self.p2.chooseAction(jumps)
                                 print("{} takes action {}".format(self.p2.name, p2_action))
                                 self.updateState(p2_action)
                                 self.showBoard()
-                            self.playerSymbol = 1
-                    self.playerSymbol = 1
 
                 win = self.winner()
                 if win is not None:

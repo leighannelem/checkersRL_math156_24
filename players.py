@@ -2,28 +2,17 @@ import numpy as np
 import pickle
 
 class Player:
-    def __init__(self, name, exp_rate=0.3, exp_rate_decay=0.99, decay_gamma=0.9, decay_gamma_decay=0.99):
+    def __init__(self, name, exp_rate=0.3):
         self.name = name # string
         self.states = []  # record all positions taken
-        self.lr = 0.02
+        self.lr = 0.2
         # exp_rate is epsilon
         # exp_rate = 0.3 means 70% of the time agent will take a greedy action and
         # 30% of the time will take a random action
         self.exp_rate = exp_rate
-        self.decay_gamma = decay_gamma
-        self.decay_gamma_decay = decay_gamma_decay
+        self.decay_gamma = 0.9
         self.states_value = {}  # state -> value
-        self.actions = []
-        self.rewards = []
-        self.exp_rate = exp_rate
-        self.exp_rate_decay = exp_rate_decay
 
-
-    def decayExplorationRate(self):
-        self.exp_rate = max(self.exp_rate * self.exp_rate_decay, 0.01)  # 0.01 is the minimum exploration rate
-
-    def decayDiscountFactor(self):
-        self.decay_gamma = min(self.decay_gamma * self.decay_gamma_decay, 0)  #0 is the minimum discount factor
 
     def getHash(self, board):
         boardHash = str(board.flatten())
@@ -59,10 +48,7 @@ class Player:
                     # remove the piece that was jumped
                     next_board[(start_row + end_row) // 2][(start_col + end_col) // 2] = 0
                     # no double jumps (for now) <3
-                    reward = 0.1
-                else:
-                    reward = 0
-                self.rewards.append(reward)
+
                 next_boardHash = self.getHash(next_board)
                 if self.states_value.get(next_boardHash) is None:
                     value = 0
@@ -72,9 +58,7 @@ class Player:
                 if value >= value_max:
                     value_max = value
                     action = m
-                
         # print("{} takes action {}".format(self.name, action))
-        self.actions.append(action)
         return action
 
     
@@ -82,32 +66,14 @@ class Player:
     def addState(self, state):
         self.states.append(state)
 
-    # at the end of game, backpropogate and update states value and update the Q-Table
-    def feedReward(self):
-        for i in reversed(range(len(self.states) - 1)):  # stop at the second last state
-            state = self.states[i]
-            action = self.actions[i]
-            reward = self.rewards[i]  # assuming self.rewards exists
-            state_action = (state, action)
-            if self.states_value.get(state_action) is None:
-                self.states_value[state_action] = 0
-
-            next_state = self.states[i + 1]
-            next_state_actions = self.getPossibleActions(next_state)
-            next_state_values = [self.states_value.get((next_state, a), 0) for a in next_state_actions]
-            max_next_state_value = max(next_state_values, default=0)
-
-            self.states_value[state_action] += self.lr*(reward + self.decay_gamma*max_next_state_value - self.states_value[state_action])
+    # at the end of game, backpropogate and update states value
+    def feedReward(self, reward):
+        for st in reversed(self.states):
+            if self.states_value.get(st) is None:
+                self.states_value[st] = 0
+            self.states_value[st] += self.lr*(self.decay_gamma*reward - self.states_value[st])
+            reward = self.states_value[st]
     
-    def calculate_q_value_difference(self, old_q_values):
-        total_difference = 0
-        for state_action, q_value in self.states_value.items():
-            if state_action in old_q_values:
-                total_difference += abs(old_q_values[state_action] - q_value)
-            else:
-                total_difference += abs(q_value)
-        return total_difference
-
     def reset(self):
         self.states = []
 
