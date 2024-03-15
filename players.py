@@ -84,7 +84,7 @@ class Player:
 
     def loadPolicy(self, file):
         fr = open(file, 'rb')
-        self.state_value = pickle.load(fr)
+        self.states_value = pickle.load(fr)
         fr.close()
             
 
