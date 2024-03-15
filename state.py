@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-
 class State:
     def __init__(self, p1, p2):
         self.p1 = p1
@@ -22,10 +21,13 @@ class State:
             [1, 0, 1, 0, 1, 0, 1, 0]])
         # negatives: black
         # positives: red
+        self.score1 = 20
+        self.score2 = 20
 
     # get unique hash of current board state
     def getHash(self):
-        self.boardHash = str(self.board.flatten())
+        #self.boardHash = str(self.board.flatten())
+        self.boardHash = self.board.flatten()
         return self.boardHash
     
     def winner(self):
@@ -47,8 +49,7 @@ class State:
                 # black has no legal moves left
                 self.isEnd = True
                 return 1 
-        
-    # from game_env.py
+                
     # need this for getLegalMoves
     def is_valid_move(self, start_row, start_col, end_row, end_col):
         if any(coord < 0 or coord > 7 for coord in [start_row, start_col, end_row, end_col]):
@@ -81,8 +82,6 @@ class State:
                 return False
         return True
 
-    # from game_env.py (altered)
-    # generates all possible legal moves/actions and returns as list of tuples
     def getLegalMoves(self, symbol):
         legal_moves = []
         for row in range(8):
@@ -116,7 +115,6 @@ class State:
                     jumps.append((row, col, end_row, end_col))
         return jumps
 
-
     def updateState(self, move):
         # Update board state based on the action taken by the player
         start_row = move[0]
@@ -139,6 +137,30 @@ class State:
         self.board[start_row][start_col] = 0
         # switch player
         self.playerSymbol = -1 if self.playerSymbol == 1 else 1
+
+    def getNewBoard(self, move):
+        newboard = self.board.copy()
+        start_row = move[0]
+        start_col = move[1]
+        end_row = move[2]
+        end_col = move[3]
+        # update new location, accounting for if it turns into a king
+        if self.playerSymbol == 1 and end_row == 0:
+            # turns into king
+            newboard[end_row][end_col] = 2 
+        elif self.playerSymbol == -1 and end_row == 7:
+            # turns into king
+            newboard[end_row][end_col] = -2 
+        else:
+            newboard[end_row][end_col] = newboard[start_row][start_col]
+        if abs(end_row - start_row) == 2:
+            # remove the piece that was jumped
+            newboard[(start_row + end_row) // 2][(start_col + end_col) // 2] = 0
+        newboard[start_row][start_col] = 0
+        return newboard
+
+    def getHashNew(self, move):
+        return self.getNewBoard(move).flatten()
     
     # only when game ends
     def giveReward(self):
@@ -236,7 +258,59 @@ class State:
         plt.xlabel('generations')
         plt.ylabel('wins [%]')
         
-        
+    def checkInside(self, x, y, ar):
+        for tab in ar:
+            if tab[0] == x and tab[1] == y:
+                return True
+        return False
+
+    def minmax(self, player, RL = False):
+        Leafs = []
+        FinalMoves = []
+        b1 = self.board.copy()
+        s1 = self.score1
+        s2 = self.score2
+        moves1 = self.getLegalMoves(player)
+        for m1 in moves1:
+            self.board = b1
+            self.score1 = s1
+            self.score2 = s2
+            self.updateState_1(m1)
+            b2 = self.board.copy()
+            s21 = self.score1
+            s22 = self.score2
+            moves2 = self.getLegalMoves(-player)
+            if len(moves2) == 0:
+                #Leafs.append((m1, 100, self.evaluate(player))) 
+                Leafs.append((m1, self.evaluate(player))) 
+            for m2 in moves2:
+                self.board = b2
+                self.score1 = s21
+                self.score2 = s22
+                self.updateState_1(m2)
+                #Leafs.append((m1, self.getScore(), self.evaluate(player)))
+                Leafs.append((m1, self.evaluate(player)))
+        self.board = b1
+        self.score1 = s1
+        self.score2 = s2
+        '''
+        max = -999
+        for leaf in Leafs:
+            # leaf[1] is the score
+            if leaf[1] > max:
+                max = leaf[1]
+                FinalMoves.clear()
+                # leaf[0][2] is end row, leaf[0][3] is end col
+                if not self.checkInside(leaf[0][2], leaf[0][3], FinalMoves) : 
+                    FinalMoves.append(leaf[0])
+            elif leaf[1] == max:
+                if not self.checkInside(leaf[0][2], leaf[0][3], FinalMoves) : 
+                    FinalMoves.append(leaf[0])'''
+                    
+        if RL:
+            return Leafs
+        return FinalMoves
+
 
     def play_human(self):
         # Play against a human

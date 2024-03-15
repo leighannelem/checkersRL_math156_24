@@ -13,10 +13,15 @@ class Player:
         self.decay_gamma = 0.9
         self.states_value = {}  # state -> value
 
+        self.score1 = 20
+        self.score2 = 20
+
 
     def getHash(self, board):
         boardHash = str(board.flatten())
         return boardHash
+
+
     
     def chooseAction(self, moves, current_board, symbol): 
         if np.random.uniform(0,1) <=  self.exp_rate: 
