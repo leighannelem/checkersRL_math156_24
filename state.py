@@ -21,8 +21,6 @@ class State:
             [1, 0, 1, 0, 1, 0, 1, 0]])
         # negatives: black
         # positives: red
-        self.score1 = 20
-        self.score2 = 20
 
     # get unique hash of current board state
     def getHash(self):
@@ -391,11 +389,14 @@ class State:
                     break
             
     
-    def showBoard(self):
+    def showBoard(self, board):
         # Display the current state of the board
         mapping = {1: 'r', 2: 'R', 0: ' ', -2: 'B', -1: 'b'}
-        mapped_board = np.vectorize(lambda value: mapping.get(value, str(value)))(self.board)
+        mapped_board = np.vectorize(lambda value: mapping.get(value, str(value)))(board)
         display_board = '   0  1  2  3  4  5  6  7\n'
         for i, row in enumerate(mapped_board):
-            display_board += f"{i} [{', '.join(row)}]\n"
-        print(display_board, '\n')
+            if i == len(mapped_board) - 1:  # Check if it's the last row
+                display_board += f"{i} [{', '.join(row)}]"
+            else:
+                display_board += f"{i} [{', '.join(row)}]\n"
+        print(display_board)
